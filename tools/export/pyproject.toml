@@ -1,0 +1,31 @@
+[project]
+name = "go-g2p-export"
+version = "0.1.0"
+description = "Rebuild go-g2p's embedded data and ONNX models from pinned sources"
+requires-python = "==3.12.*" # unicode.json requires Unicode 15.0.0
+dependencies = [
+    "numpy==2.2.6",
+    "onnx==1.17.0",
+    "spacy==3.8.7",
+    "thinc==8.3.11",
+    "en-core-web-sm",
+    "torch==2.6.0+cpu",
+    "transformers==4.51.3",
+    # spaCy's CLI imports click through typer; typer-slim alone omits it.
+    "click==8.1.8",
+    "typer==0.15.4",
+    "typer-slim==0.15.4",
+]
+
+[tool.uv]
+package = false
+environments = ["sys_platform == 'linux' and platform_machine == 'x86_64'"]
+
+[tool.uv.sources]
+en-core-web-sm = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl" }
+torch = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true

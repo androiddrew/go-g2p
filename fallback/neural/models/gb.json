@@ -1,0 +1,10 @@
+{
+  "graphemes": "____AIQWYabdfhijklmnpstuvwz'-.BCDEFGHJKLMNOPRSTUVXZcegoqrxy",
+  "phonemes": "____AIQWYabdfhijklmnpstuvwzðŋɑɒɔəɛɜɡɪɹʃʊʌʒʤʧˈˌːθᵊ",
+  "max_positions": 64,
+  "max_length": 21,
+  "bos": 1,
+  "eos": 2,
+  "unknown": 3,
+  "forced_eos": 2
+}
