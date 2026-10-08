@@ -15,7 +15,6 @@ import (
 
 	"github.com/androiddrew/go-g2p/fallback"
 	"github.com/androiddrew/go-g2p/internal/ortruntime"
-	"github.com/androiddrew/ortenv"
 	ort "github.com/yalue/onnxruntime_go"
 )
 
@@ -33,7 +32,8 @@ type Config struct {
 	// gb.json and each dialect's -encoder.onnx and -decoder.onnx. Usually empty.
 	ModelDir string
 	// ORTLibrary is an ONNX Runtime library path or OS-loader name. When set, the
-	// engine shares the environment through an ortenv lease. When empty, the
+	// engine initializes the environment through ortenv, which retains it until
+	// process exit. When empty, the
 	// caller owns the environment and must initialize it before New.
 	ORTLibrary string
 	// Threads sets intra-op threads per session. Zero selects 1.
@@ -57,7 +57,6 @@ type Engine struct {
 	mu     sync.Mutex
 	models map[string]*network
 	closed bool
-	lease  *ortenv.Lease
 }
 
 var _ fallback.Engine = (*Engine)(nil)
@@ -93,14 +92,11 @@ func New(config Config) (*Engine, error) {
 		}
 		n.models[dialect] = m
 	}
-	var err error
-	n.lease, err = ortruntime.Acquire(config.ORTLibrary)
-	if err != nil {
+	if err := ortruntime.Init(config.ORTLibrary); err != nil {
 		return nil, err
 	}
 	options, err := ort.NewSessionOptions()
 	if err != nil {
-		_ = n.lease.Close()
 		return nil, err
 	}
 	if err = options.SetIntraOpNumThreads(threads); err == nil {
@@ -126,10 +122,9 @@ func New(config Config) (*Engine, error) {
 			}
 		}
 	}
-	// Options must be released before unloading the ORT library on error paths.
 	err = errors.Join(err, options.Destroy())
 	if err != nil {
-		err = errors.Join(err, n.destroySessions(), n.lease.Close())
+		err = errors.Join(err, n.destroySessions())
 		return nil, fmt.Errorf("load neural ONNX assets (see ASSETS.md): %w", err)
 	}
 	return n, nil
@@ -154,7 +149,8 @@ func (n *Engine) Name() string { return Name }
 // Rating returns 1, Misaki's rating for neural fallback output.
 func (n *Engine) Rating() int { return 1 }
 
-// Close destroys the sessions and releases any ortenv lease. It is idempotent.
+// Close destroys the sessions. The ONNX Runtime environment stays initialized.
+// Close is idempotent.
 func (n *Engine) Close() error {
 	n.mu.Lock()
 	defer n.mu.Unlock()
@@ -162,9 +158,7 @@ func (n *Engine) Close() error {
 		return nil
 	}
 	n.closed = true
-	err := n.destroySessions()
-	err = errors.Join(err, n.lease.Close())
-	return err
+	return n.destroySessions()
 }
 
 func run(session *ort.DynamicAdvancedSession, inputs []ort.Value) (ort.Value, error) {

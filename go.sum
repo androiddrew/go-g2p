@@ -1,5 +1,5 @@
-github.com/androiddrew/ortenv v0.1.0 h1:5D3OygFYIQKpMQHB2a4ew/4UVWX3MDdKpOpR+qaDDcE=
-github.com/androiddrew/ortenv v0.1.0/go.mod h1:v0we3sbtZaSgJSzI/4OhEUGfQyuZM9aYAxcUOCl+8W0=
+github.com/androiddrew/ortenv v0.2.0 h1:qYhIAAOy2HJyc4FHGmdbq3dk41RpiBQxlncMcDKAehA=
+github.com/androiddrew/ortenv v0.2.0/go.mod h1:v0we3sbtZaSgJSzI/4OhEUGfQyuZM9aYAxcUOCl+8W0=
 github.com/dlclark/regexp2 v1.11.5 h1:Q/sSnsKerHeCkc/jSTNq1oCm7KiVgUMZRDUoRu0JQZQ=
 github.com/dlclark/regexp2 v1.11.5/go.mod h1:DHkYz0B9wPfa6wondMfaivmHpzrQ3v9q8cnmRbL6yW8=
 github.com/yalue/onnxruntime_go v1.22.0 h1:SzqOfFRRrLRRAFR5VoSxABjTiQSAi8Y4ETYKrMFK1jk=

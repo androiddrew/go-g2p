@@ -15,6 +15,7 @@ import (
 	"github.com/androiddrew/go-g2p/fallback"
 	"github.com/androiddrew/go-g2p/fallback/espeak"
 	"github.com/androiddrew/go-g2p/fallback/neural"
+	"github.com/androiddrew/go-g2p/internal/nativetest"
 	"github.com/androiddrew/ortenv"
 	ort "github.com/yalue/onnxruntime_go"
 )
@@ -175,20 +176,17 @@ func TestNoFallback(t *testing.T) {
 
 func TestCallerOwnedEnvironment(t *testing.T) {
 	c := testConfig(t)
+	if !nativetest.Subprocess(t) {
+		return
+	}
 	library := c.ORTLibrary
 	c.ORTLibrary = ""
 	if _, err := New(c); !errors.Is(err, ErrNotInitialized) {
 		t.Fatalf("uninitialized caller-owned environment: %v", err)
 	}
-	lease, err := ortenv.Acquire(library)
-	if err != nil {
+	if err := ortenv.Init(library); err != nil {
 		t.Fatal(err)
 	}
-	defer func() {
-		if err := lease.Close(); err != nil {
-			t.Error(err)
-		}
-	}()
 	n, err := neural.New(neural.Config{})
 	if err != nil {
 		t.Fatal(err)
@@ -212,6 +210,9 @@ func TestCallerOwnedEnvironment(t *testing.T) {
 
 func TestMalformedFrontend(t *testing.T) {
 	c := testConfig(t)
+	if !nativetest.Subprocess(t) {
+		return
+	}
 	source, err := filepath.Abs("data")
 	if err != nil {
 		t.Fatal(err)
@@ -233,7 +234,7 @@ func TestMalformedFrontend(t *testing.T) {
 			t.Fatalf("accepted malformed %s", name)
 		}
 		if ort.IsInitialized() {
-			t.Fatal("leaked environment")
+			t.Fatal("malformed frontend data initialized the environment")
 		}
 	}
 	bad := c
@@ -244,8 +245,9 @@ func TestMalformedFrontend(t *testing.T) {
 	if _, err := New(bad); err == nil {
 		t.Fatal("accepted missing POS model")
 	}
-	if ort.IsInitialized() {
-		t.Fatal("leaked environment after failed POS load")
+	// The runtime initializes before the POS model loads and is retained.
+	if !ort.IsInitialized() {
+		t.Fatal("failed POS load destroyed the environment")
 	}
 }
 

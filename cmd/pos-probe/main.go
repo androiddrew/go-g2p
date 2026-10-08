@@ -59,11 +59,9 @@ func run() error {
 	if err := readJSON(*fixtures, &cases); err != nil {
 		return err
 	}
-	lease, err := ortenv.Acquire(*library)
-	if err != nil {
+	if err := ortenv.Init(*library); err != nil {
 		return err
 	}
-	defer lease.Close()
 	options, err := ort.NewSessionOptions()
 	if err != nil {
 		return err
