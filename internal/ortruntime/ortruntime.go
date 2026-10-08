@@ -12,15 +12,15 @@ import (
 // not initialized it.
 var ErrNotInitialized = errors.New("ONNX Runtime is not initialized: set ORTLibrary, or initialize the environment before calling New")
 
-// Acquire takes an ortenv lease for a non-empty library selector. An empty
-// selector means the caller owns the environment: it must already be
-// initialized, and the returned nil lease is safe to Close.
-func Acquire(library string) (*ortenv.Lease, error) {
+// Init initializes the environment through ortenv for a non-empty library
+// selector; ortenv retains it until process exit. An empty selector means the
+// caller owns the environment, which must already be initialized.
+func Init(library string) error {
 	if library != "" {
-		return ortenv.Acquire(library)
+		return ortenv.Init(library)
 	}
 	if !ort.IsInitialized() {
-		return nil, ErrNotInitialized
+		return ErrNotInitialized
 	}
-	return nil, nil
+	return nil
 }

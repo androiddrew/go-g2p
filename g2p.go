@@ -13,7 +13,6 @@ import (
 
 	"github.com/androiddrew/go-g2p/fallback"
 	"github.com/androiddrew/go-g2p/internal/ortruntime"
-	"github.com/androiddrew/ortenv"
 )
 
 // ErrNotInitialized is returned by New when ORTLibrary is empty and the caller
@@ -37,7 +36,8 @@ type Config struct {
 	// ModelDir overrides the embedded pos.json and pos.onnx. Usually empty.
 	ModelDir string
 	// ORTLibrary is an ONNX Runtime library path or OS-loader name. When set, the
-	// engine shares the environment through an ortenv lease. When empty, the
+	// engine initializes the environment through ortenv, which retains it until
+	// process exit. When empty, the
 	// caller owns the environment and must initialize it before New and destroy
 	// it only after Close.
 	ORTLibrary string
@@ -134,7 +134,6 @@ type Engine struct {
 	tagger    *tagger
 	lexicons  map[Dialect]*lexicon
 	fallback  fallback.Engine
-	lease     *ortenv.Lease
 }
 
 // New loads the dictionaries and POS model for both dialects. Close is mandatory.
@@ -167,8 +166,7 @@ func New(c Config) (_ *Engine, err error) {
 		}
 		e.lexicons[dialect].digits = e.tokenizer.digits
 	}
-	e.lease, err = ortruntime.Acquire(c.ORTLibrary)
-	if err != nil {
+	if err = ortruntime.Init(c.ORTLibrary); err != nil {
 		return nil, err
 	}
 	e.tagger, err = loadTagger(models, c.Threads)
@@ -178,8 +176,8 @@ func New(c Config) (_ *Engine, err error) {
 	return e, nil
 }
 
-// Close destroys the POS session and releases any ortenv lease. It does not
-// close Config.Fallback. Close is idempotent.
+// Close destroys the POS session. It does not close Config.Fallback or the ONNX
+// Runtime environment. Close is idempotent.
 func (e *Engine) Close() error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
@@ -191,7 +189,7 @@ func (e *Engine) Close() error {
 	if e.tagger != nil {
 		err = errors.Join(err, e.tagger.session.Destroy())
 	}
-	return errors.Join(err, e.lease.Close())
+	return err
 }
 
 // Phonemize converts text to phonemes. When some words cannot be pronounced it

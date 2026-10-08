@@ -12,7 +12,7 @@ import (
 )
 
 // The usual setup: the engine and its neural fallback share ONNX Runtime through
-// ortenv leases. Dictionaries and models are embedded, so no paths are needed.
+// ortenv. Dictionaries and models are embedded, so no paths are needed.
 func Example() {
 	const library = "libonnxruntime.so" // OS loader name or a path to the library
 

@@ -63,10 +63,11 @@ diagnostic opt-in; `Complete` remains false. `Request.Debug` adds tagger interna
 ONNX Runtime has one environment per process, shared by every model in it. The
 trained POS tagger always uses it, as does `fallback/neural`.
 
-- **Set `ORTLibrary`** (simplest): the engine takes a lease from
-  [`github.com/androiddrew/ortenv`](https://github.com/androiddrew/ortenv), which
-  starts the environment on first use and shuts it down when the last lease closes.
-  Every component using ortenv in the process must use the same library selector.
+- **Set `ORTLibrary`** (simplest): the engine initializes the environment through
+  [`github.com/androiddrew/ortenv`](https://github.com/androiddrew/ortenv) on first
+  use. The environment stays loaded until process exit, so closing the last engine
+  never unloads the runtime. Every component using ortenv in the process must use
+  the same library selector, and nothing may destroy the environment ortenv owns.
 - **Leave `ORTLibrary` empty** when your application already manages ONNX Runtime
   itself (directly through `onnxruntime_go` or through ortenv). Initialize the
   environment before `New` and destroy it only after `Close`; otherwise `New`
@@ -106,7 +107,8 @@ installed, the same run also checks the eSpeak backend. The tests compare
 tokenizer, POS and full-pipeline output with expected results committed under
 `testdata/` (recorded from Misaki and spaCy). `G2P_TEST_TOKENIZER` can point the
 tokenizer test at a different fixture file. Native tests skip when `G2P_TEST_ORT`
-is unset.
+is unset. Tests that need ONNX Runtime uninitialized each run in a fresh
+subprocess, because ortenv keeps the environment loaded until process exit.
 
 [`tools/export`](tools/export) regenerates the embedded files from their pinned
 sources and checks them against the committed bytes (Python, not needed to use
